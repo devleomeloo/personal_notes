@@ -1,2 +1,1 @@
-"# s" 
-"# p" 
+App para gravar anotações pessoais. 
