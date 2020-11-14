@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 
 class NoteViewModel(application: Application): AndroidViewModel(application) {
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
+     val test = "test";
 
     val repository = NoteRepository(RoomNoteDataSource(application))
 
@@ -32,4 +33,5 @@ class NoteViewModel(application: Application): AndroidViewModel(application) {
         useCases.addNote(note)
         saved.postValue(true)}
     }
+
 }
