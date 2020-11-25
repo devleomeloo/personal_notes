@@ -1,12 +1,13 @@
 package com.example.personalnotes.presentetation
 
+import android.app.AlertDialog
 import android.content.Context.INPUT_METHOD_SERVICE
+import android.content.DialogInterface
 import android.os.Bundle
+import android.view.*
 import androidx.fragment.app.Fragment
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
+import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProviders
@@ -16,11 +17,6 @@ import com.example.personalnotes.R
 import com.example.personalnotes.framework.NoteViewModel
 import kotlinx.android.synthetic.main.fragment_note.*
 
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
-
 /**
  * A simple [Fragment] subclass.
  * Use the [NoteFragment.newInstance] factory method to
@@ -28,19 +24,14 @@ private const val ARG_PARAM2 = "param2"
  */
 class NoteFragment : Fragment() {
 
+    private var noteId = 0L
     private lateinit var viewModel: NoteViewModel
     private var currentNote = Note("", "", 0L, 0L)
-    /*// TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
-        }
-    }*/
+        setHasOptionsMenu(true)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -50,7 +41,7 @@ class NoteFragment : Fragment() {
         return inflater.inflate(R.layout.fragment_note, container, false)
     }
 
-    companion object {
+    /*companion object {
         /**
          * Use this factory method to create a new instance of
          * this fragment using the provided parameters.
@@ -68,12 +59,19 @@ class NoteFragment : Fragment() {
                     putString(ARG_PARAM2, param2)
                 }
             }*/
-    }
+    }*/
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         viewModel = ViewModelProviders.of(this).get(NoteViewModel::class.java)
+        arguments?.let{
+            noteId = NoteFragmentArgs.fromBundle(it).noteId
+        }
+
+        if(noteId != 0L){
+            viewModel.getNote(noteId)
+        }
 
         checkButton.setOnClickListener {
             if(titleView.text.toString() != "" || contentView.text.toString() != "") {
@@ -96,9 +94,17 @@ class NoteFragment : Fragment() {
         viewModel.saved.observe(this, Observer {
             if(it){
                 Toast.makeText(context, "Done !", Toast.LENGTH_SHORT).show()
+                hideKeyboard()
                 Navigation.findNavController(titleView).popBackStack()
             } else {
                 Toast.makeText(context, "Somethins went wrong, please try again", Toast.LENGTH_SHORT).show()
+            }
+        })
+        viewModel.currentNote.observe(this, Observer { note : Note? ->
+            note?.let{
+                currentNote = it
+                titleView.setText(it.title, TextView.BufferType.EDITABLE)
+                contentView.setText(it.content, TextView.BufferType.EDITABLE)
             }
         })
     }
@@ -106,5 +112,28 @@ class NoteFragment : Fragment() {
     private fun hideKeyboard(){
         val imm = context?.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
         imm.hideSoftInputFromWindow(titleView.windowToken, 0)
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
+        inflater.inflate(R.menu.note_menu, menu)
+        super.onCreateOptionsMenu(menu, inflater)
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when(item.itemId){
+            R.id.deleteNote ->{
+                if(context != null && noteId != 0L)
+                    AlertDialog.Builder(context!!)
+                        .setTitle("Delete note")
+                        .setMessage("Are you sure you want to delete this note?")
+                        .setPositiveButton("Yes"){dialog: DialogInterface?, which: Int ->
+                            viewModel.deleteNote(currentNote)
+                        }
+                        .setNegativeButton("Cancel"){dialog: DialogInterface?, which: Int ->  }
+                        .create()
+                        .show()
+            }
+        }
+        return true
     }
 }
